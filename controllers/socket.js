@@ -168,13 +168,41 @@ const removeAccidentallyService = async( uid ) => {
     return negocioGuardado
 }
 
-const updateCitaState = async( id, usuarioId, estado ) => {
+const updateCitaState = async( id, usuarioId, estado, io ) => {
 
     let cita = await Cita.findById(id)
 
     const indexCita = cita.cita.findIndex( e => e.usuarioId === usuarioId )
 
     cita.cita[indexCita].estado = estado
+
+    if ( estado === 'Finalizada' ) {
+        let [ negocio ] = await Negocio.find({ barberId: cita.cita[indexCita].barberId })
+
+        const indexNegocio = negocio.horarioDia.findIndex( e => e.selected === usuarioId )
+        
+        if ( indexNegocio > -1 ) {
+
+            const horaMoment = ( negocio.horarioDia.length === 1 ) 
+                ? moment(negocio.horarioDia[0].fecha).clone().add(negocio.xTiempo.cantidad, 'minutes')
+                : negocio.horarioDia[1].fecha
+    
+            const minService = negocio.servicios.reduce(function(prev, curr) {
+                return prev.tiempo < curr.tiempo ? prev : curr;
+            });
+
+            if (moment(horaMoment).diff(moment()) > ( minService.tiempo + 5 )) {
+
+                negocio.horarioDia[indexNegocio] = { fecha: new Date().getTime(), hora: moment().format('hh:mm a'), selected: false, citaId: null }
+
+                io.emit('updated-service-cita', negocio)
+    
+                await Negocio.findByIdAndUpdate( negocio._id, negocio, { new: true } )
+            }
+    
+        }
+
+    }
 
     return await Cita.findByIdAndUpdate( id, cita, { new: true } )
 }
@@ -240,7 +268,7 @@ const updateAll = async( io ) => {
 
             if ( citaIndex <= -1 ) return
 
-            if ( cita.cita[citaIndex].estado === 'Atendiendo' ) return
+            if ( cita.cita[citaIndex].estado !== 'En-espera' ) return
             
             cita.cita[citaIndex].estado = 'Atendiendo'
 

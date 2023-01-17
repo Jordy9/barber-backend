@@ -68,7 +68,7 @@ class Sockets {
             })
 
             socket.on('update-cita-state', async({ citaId, usuarioId, estado }) => {
-                const resp = await updateCitaState( citaId, usuarioId, estado )
+                const resp = await updateCitaState( citaId, usuarioId, estado, this.io )
 
                 this.io.emit('updated-cita-state', resp)
             })
