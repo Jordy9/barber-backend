@@ -168,6 +168,17 @@ const removeAccidentallyService = async( uid ) => {
     return negocioGuardado
 }
 
+const updateCitaState = async( id, usuarioId, estado ) => {
+
+    let cita = await Cita.findById(id)
+
+    const indexCita = cita.cita.findIndex( e => e.usuarioId === usuarioId )
+
+    cita.cita[indexCita].estado = estado
+
+    return await Cita.findByIdAndUpdate( id, cita, { new: true } )
+}
+
 
 const updateAll = async() => {
     
@@ -233,5 +244,6 @@ module.exports = {
     removeAccidentallyService,
     createServiceCita,
     removeServiceCita,
-    updateAll
+    updateAll,
+    updateCitaState
 }
