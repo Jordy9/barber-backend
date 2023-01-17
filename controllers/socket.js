@@ -26,7 +26,7 @@ const updateService = async( id, hora, uid ) => {
     let negocio = await Negocio.findById(id)
 
     if ( negocio.horarioDia.some( horario => horario.selected === uid ) ) {
-        const nuevoNegocioUpdate = negocio.horarioDia.map( horario => horario.selected === uid ? { ...horario, selected: false } : horario )
+        const nuevoNegocioUpdate = negocio.horarioDia.map( horario => horario.selected === uid ? { ...horario, selected: false, citaId: null } : horario )
         const nuevoNegocio = nuevoNegocioUpdate.map( horario => horario.hora === hora ? { ...horario, selected: uid } : horario )
 
         negocio.horarioDia = nuevoNegocio
@@ -74,7 +74,7 @@ const removeService = async( id, uid ) => {
 
     let negocio = await Negocio.findOne({ barberId: id })
 
-    const nuevoNegocio = negocio.horarioDia.map( horario => horario.selected === uid ? { ...horario, selected: false } : horario )
+    const nuevoNegocio = negocio.horarioDia.map( horario => horario.selected === uid ? { ...horario, selected: false, citaId: null } : horario )
 
     negocio.horarioDia = nuevoNegocio
 
@@ -95,7 +95,7 @@ const removeAllOrManyService = async( content ) => {
     
         const negocioEncontrado = negocio.find( e => e.barberId === element.barberId )
         
-        negocioEncontrado.horarioDia.map( horario => horario.hora === element.hora ? nuevoNegocio.push({ ...horario, selected: false }) : nuevoNegocio.push(horario) )
+        negocioEncontrado.horarioDia.map( horario => horario.hora === element.hora ? nuevoNegocio.push({ ...horario, selected: false, citaId: null }) : nuevoNegocio.push(horario) )
         
         negocioEncontrado.horarioDia = nuevoNegocio
     
@@ -135,11 +135,11 @@ const removeAccidentallyService = async( uid ) => {
 
                 const { usuarioId, hora } = element2.cita[indexx]
                 
-                negocio.horarioDia.map( horario => ( ( horario.selected === usuarioId && horario.hora !== hora ) || ( horario.selected === element.usuarioId && horario.selected !== usuarioId ) ) ? nuevoNegocioFalse.push({ ...horario, selected: false }) : nuevoNegocioFalse.push(horario) )
+                negocio.horarioDia.map( horario => ( ( horario.selected === usuarioId && horario.hora !== hora.hora ) || ( horario.selected === element.usuarioId && horario.selected !== usuarioId ) ) ? nuevoNegocioFalse.push({ ...horario, selected: false, citaId: null }) : nuevoNegocioFalse.push(horario) )
                                 
                 negocio.horarioDia = nuevoNegocioFalse
     
-                negocio.horarioDia.map( horario => ( horario.hora === hora ) ? nuevoNegocio.push({ ...horario, selected: usuarioId }) : ( element2.cita.some( ct => horario.hora === ct.hora ) ) ? nuevoNegocio.push({ ...horario, selected: element.usuarioId }) : nuevoNegocio.push(horario) )
+                negocio.horarioDia.map( horario => ( horario.hora === hora.hora ) ? nuevoNegocio.push({ ...horario, selected: usuarioId }) : ( element2.cita.some( ct => horario.hora === ct.hora.hora ) ) ? nuevoNegocio.push({ ...horario, selected: element.usuarioId }) : nuevoNegocio.push(horario) )
     
                 negocio.horarioDia = nuevoNegocio
 
@@ -154,7 +154,7 @@ const removeAccidentallyService = async( uid ) => {
         
             let nuevoNegocio = []
         
-            negocio.horarioDia.map( horario => ( horario.selected === element.usuarioId && horario.hora === element.hora ) ? nuevoNegocio.push({ ...horario, selected: false }) : nuevoNegocio.push(horario) )
+            negocio.horarioDia.map( horario => ( horario.selected === element.usuarioId && horario.hora === element.hora ) ? nuevoNegocio.push({ ...horario, selected: false, citaId: null }) : nuevoNegocio.push(horario) )
         
             negocio.horarioDia = nuevoNegocio
     
@@ -180,7 +180,7 @@ const updateCitaState = async( id, usuarioId, estado ) => {
 }
 
 
-const updateAll = async() => {
+const updateAll = async( io ) => {
     
     let nuevoNegocio = []
     
@@ -208,7 +208,7 @@ const updateAll = async() => {
 
         if ( element.horarioDia[0].selected === false && element.horarioDia[0].hora.length < 12 && moment(horaMoment).diff(moment(), 'minutes') > 6 && moment(horaMoment).clone().subtract(5, 'minutes').diff(moment(), 'minutes') <= serviceTime.tiempo ) {
 
-            element.horarioDia[0] = { fecha: new Date().getTime(), hora: moment().format('hh:mm a') + ` Solo ${serviceTime.servicio} `, selected: false }
+            element.horarioDia[0] = { fecha: new Date().getTime(), hora: moment().format('hh:mm a') + ` Solo ${serviceTime.servicio} `, selected: false, citaId: null }
 
             // { $push: { horarioDia: { $each: [ { fecha: new Date().getTime(), hora: moment().format('hh:mm: a') + ' Solo cerquillo', selected: false } ], $position: 1 } } }
 
@@ -228,6 +228,25 @@ const updateAll = async() => {
             nuevoNegocio.push(element)
 
             await Negocio.findByIdAndUpdate(element._id, element, { new: true })
+        }
+
+        if ( moment().isSameOrAfter(moment(element?.horarioDia[0]?.fecha)) && element?.horarioDia[0]?.selected !== false ) {
+
+            let cita = await Cita.findById( element.horarioDia[0].citaId )
+
+            if ( !cita ) return
+
+            const citaIndex = cita.cita.findIndex( e => e.usuarioId === element.horarioDia[0].selected )
+
+            if ( citaIndex <= -1 ) return
+
+            if ( cita.cita[citaIndex].estado === 'Atendiendo' ) return
+            
+            cita.cita[citaIndex].estado = 'Atendiendo'
+
+            io.emit('update-cita-by-state-finish', cita)
+
+            await Cita.findByIdAndUpdate( cita._id, cita, { new: true } )
         }
         
     });

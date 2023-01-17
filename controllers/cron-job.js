@@ -4,7 +4,7 @@ const { updateAll } = require('./socket')
 const updateTime = (io) => {
 
     cron.schedule('*/1 * * * *', async() => {
-        const resp = await updateAll()
+        const resp = await updateAll(io)
 
         if ( resp.length > 0 ) {
             io.emit('update-negocio-by-minute', resp)
