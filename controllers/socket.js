@@ -3,8 +3,6 @@ const Cita = require("../models/Cita")
 const Negocio = require("../models/Negocio")
 const Usuario = require("../models/Usuario")
 const moment = require("moment")
-const e = require("cors")
-const { findByIdAndUpdate } = require("../models/Cita")
 
 const startService = async( firstValue, secondValue, id, thirdValue ) => {
 
@@ -207,6 +205,44 @@ const updateCitaState = async( id, usuarioId, estado, io ) => {
     return await Cita.findByIdAndUpdate( id, cita, { new: true } )
 }
 
+const cancelCitaComplete = async( id, citaForm, io ) => {
+
+    let nuevaCita = []
+
+    for (let index = 0; index < citaForm.length; index++) {
+        const element = citaForm[index];
+
+        if ( !element.barberId ) return
+
+        let negocio = await Negocio.findOne({ barberId: element.barberId })
+
+        const nuevoNegocio = negocio.horarioDia.map( horario => horario.selected === element.usuarioId ? { ...horario, selected: false, citaId: null } : horario )
+
+        negocio.horarioDia = nuevoNegocio
+
+        const negocioGuardado = await Negocio.findByIdAndUpdate(negocio._id, negocio, { new: true })
+
+        if ( !negocioGuardado ) return
+
+        console.log(negocio.horarioDia)
+
+        io.emit('updated-service-cita', negocio)
+
+        let cita = await Cita.findById(id)
+
+        const indexCita = cita.cita.findIndex( e => e.usuarioId === element.usuarioId )
+
+        cita.cita[indexCita].estado = 'Cancelada'
+
+        nuevaCita.push(cita)
+
+        await Cita.findByIdAndUpdate( id, cita, { new: true } )
+        
+    }
+
+    return nuevaCita
+
+}
 
 const updateAll = async( io ) => {
     
@@ -260,6 +296,8 @@ const updateAll = async( io ) => {
 
         if ( moment().isSameOrAfter(moment(element?.horarioDia[0]?.fecha)) && element?.horarioDia[0]?.selected !== false ) {
 
+            if ( !element.horarioDia[0].citaId ) return
+
             let cita = await Cita.findById( element.horarioDia[0].citaId )
 
             if ( !cita ) return
@@ -292,5 +330,6 @@ module.exports = {
     createServiceCita,
     removeServiceCita,
     updateAll,
-    updateCitaState
+    updateCitaState,
+    cancelCitaComplete
 }

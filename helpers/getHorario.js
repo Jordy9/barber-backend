@@ -20,12 +20,12 @@ const getHorario = (xTiempo, minHor, inicio, fin) => {
         let horaSuma = xTiempo || 30
 
         if ( index === 0 ) {
-            arreglo.push({ fecha: moment(inicio), hora: moment(inicio).format('hh:mm a'), selected: false })
+            arreglo.push({ fecha: moment(inicio), hora: moment(inicio).format('hh:mm a'), selected: false, citaId: null })
         } else {
             let fecha = arreglo[index - 1]?.fecha?.clone().add(horaSuma, 'minutes')
             let hora = arreglo[index - 1]?.fecha?.clone().add(horaSuma, 'minutes').format('hh:mm a')
             let selected = false
-            arreglo.push({ fecha, hora, selected })
+            arreglo.push({ fecha, hora, selected, citaId: null })
         }
 
         if ( arreglo[arreglo.length - 1].fecha.clone().add(10, 'minutes').isSameOrAfter(moment(fin).subtract(30, 'minutes')) ) return arreglo

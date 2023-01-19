@@ -5,7 +5,7 @@ const Negocio = require("../models/Negocio");
 const getCita = async( req, res = response ) => {
     
     try {
-        const cita = await Cita.find()
+        const cita = await Cita.find().sort({ createdAt: -1 })
 
         res.status(200).json({
             ok: true,
