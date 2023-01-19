@@ -133,7 +133,7 @@ const removeAccidentallyService = async( uid ) => {
 
                 const { usuarioId, hora } = element2.cita[indexx]
                 
-                negocio.horarioDia.map( horario => ( ( horario.selected === usuarioId && horario.hora !== hora.hora ) || ( horario.selected === element.usuarioId && horario.selected !== usuarioId ) ) ? nuevoNegocioFalse.push({ ...horario, selected: false, citaId: null }) : nuevoNegocioFalse.push(horario) )
+                negocio.horarioDia.map( horario => ( ( horario.selected === usuarioId && horario.hora !== hora.hora && horario.citaId === null ) || ( horario.selected === element.usuarioId && horario.selected !== usuarioId && horario.citaId === null ) ) ? nuevoNegocioFalse.push({ ...horario, selected: false, citaId: null }) : nuevoNegocioFalse.push(horario) )
                                 
                 negocio.horarioDia = nuevoNegocioFalse
     
@@ -152,7 +152,7 @@ const removeAccidentallyService = async( uid ) => {
         
             let nuevoNegocio = []
         
-            negocio.horarioDia.map( horario => ( horario.selected === element.usuarioId && horario.hora === element.hora ) ? nuevoNegocio.push({ ...horario, selected: false, citaId: null }) : nuevoNegocio.push(horario) )
+            negocio.horarioDia.map( horario => ( horario.selected === element.usuarioId && horario.hora === element.hora && horario.citaId === null ) ? nuevoNegocio.push({ ...horario, selected: false, citaId: null }) : nuevoNegocio.push(horario) )
         
             negocio.horarioDia = nuevoNegocio
     
@@ -224,8 +224,6 @@ const cancelCitaComplete = async( id, citaForm, io ) => {
 
         if ( !negocioGuardado ) return
 
-        console.log(negocio.horarioDia)
-
         io.emit('updated-service-cita', negocio)
 
         let cita = await Cita.findById(id)
@@ -258,7 +256,7 @@ const updateAll = async( io ) => {
 
         const serviceTime = ( minService ) ? minService : 15
 
-        if ( element.horarioDia.length === 0 ) return
+        if ( element.horarioDia?.length === 0 ) return
 
         const tiempoDelete = element.xTiempo.cantidad / 2
 
