@@ -296,7 +296,7 @@ const updateAll = async( io ) => {
 
         if ( moment().isSameOrAfter(moment(element?.horarioDia[0]?.fecha)) && element?.horarioDia[0]?.selected !== false ) {
 
-            if ( !element.horarioDia[0].citaId ) return
+            if ( !element.horarioDia[0]?.citaId ) return
 
             let cita = await Cita.findById( element.horarioDia[0].citaId )
 
