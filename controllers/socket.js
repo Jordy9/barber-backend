@@ -131,7 +131,9 @@ const removeAccidentallyService = async( uid ) => {
 
             citas.forEach(async(element2, indexx) => {
 
-                const { usuarioId, hora } = element2.cita[indexx]
+                if( !element2?.cita[indexx] ) return
+
+                const { usuarioId, hora } = element2?.cita[indexx]
                 
                 negocio.horarioDia.map( horario => ( ( horario.selected === usuarioId && horario.hora !== hora.hora && horario.citaId === null ) || ( horario.selected === element.usuarioId && horario.selected !== usuarioId && horario.citaId === null ) ) ? nuevoNegocioFalse.push({ ...horario, selected: false, citaId: null }) : nuevoNegocioFalse.push(horario) )
                                 
