@@ -24,6 +24,7 @@ const updateService = async( id, hora, uid ) => {
     let negocio = await Negocio.findById(id)
 
     if ( negocio.horarioDia.some( horario => horario.selected === uid ) ) {
+
         const nuevoNegocioUpdate = negocio.horarioDia.map( horario => horario.selected === uid ? { ...horario, selected: false, citaId: null } : horario )
         const nuevoNegocio = nuevoNegocioUpdate.map( horario => horario.hora === hora ? { ...horario, selected: uid } : horario )
 
@@ -48,13 +49,65 @@ const updateService = async( id, hora, uid ) => {
 
 }
 
-const createServiceCita = async( form, uid ) => {
+const createServiceCita = async( form, uid, io ) => {
 
     let usuario = await Usuario.findById( uid )
 
-    usuario.formCita = [ ...usuario.formCita, form ]
+    if ( usuario.formCita.some( e => e.barberId !== form.barberId && e.usuarioId === form.usuarioId ) ) {
+        const formFind = usuario.formCita.find( e => e.barberId !== form.barberId && e.usuarioId === form.usuarioId )
 
-    return await usuario.save()
+        let negocio = await Negocio.findById( formFind.barberId )
+
+        if ( !negocio ) return
+
+        const nuevoHorario = negocio.horarioDia.map( e => e.selected === formFind.usuarioId ? { ...e, selected: false, citaId: null } : e )
+
+        negocio.horarioDia = nuevoHorario
+
+        io.emit('updated-service-cita', negocio)
+
+        await Negocio.findByIdAndUpdate(negocio._id, negocio)
+        
+        const nuevoFormCita = usuario.formCita.filter( e => e !== formFind )
+
+        usuario.formCita = [ ...nuevoFormCita, form ]
+    
+        return await usuario.save()
+
+    } else {
+
+        if ( form.citaActId ) {
+            let cita = await Cita.findById( form.citaActId )
+
+            const citaFind = cita.cita.find( ct => ct.usuarioId === form.usuarioId )
+
+            if ( !citaFind ) return
+
+            let negocio = await Negocio.findOne({ barberId: citaFind.barberId })
+
+            if ( !negocio ) return
+
+            const nuevoHorario = negocio.horarioDia.map( e => e.selected === citaFind.usuarioId ? { ...e, selected: false, citaId: null } : e )
+
+            negocio.horarioDia = nuevoHorario
+
+            io.emit('updated-service-cita', negocio)
+
+            await Negocio.findByIdAndUpdate(negocio._id, negocio)
+
+            usuario.formCita = [ ...usuario.formCita, form ]
+    
+            return await usuario.save()
+
+        } else {
+
+            usuario.formCita = [ ...usuario.formCita, form ]
+        
+            return await usuario.save()
+        }
+
+    }
+
 }
 
 const removeServiceCita = async( uid ) => {
@@ -133,13 +186,13 @@ const removeAccidentallyService = async( uid ) => {
 
                 if( !element2?.cita[indexx] ) return
 
-                const { usuarioId, hora } = element2?.cita[indexx]
+                const { usuarioId, hora, _id } = element2?.cita[indexx]
                 
                 negocio.horarioDia.map( horario => ( ( horario.selected === usuarioId && horario.hora !== hora.hora && horario.citaId === null ) || ( horario.selected === element.usuarioId && horario.selected !== usuarioId && horario.citaId === null ) ) ? nuevoNegocioFalse.push({ ...horario, selected: false, citaId: null }) : nuevoNegocioFalse.push(horario) )
                                 
                 negocio.horarioDia = nuevoNegocioFalse
     
-                negocio.horarioDia.map( horario => ( horario.hora === hora.hora ) ? nuevoNegocio.push({ ...horario, selected: usuarioId }) : ( element2.cita.some( ct => horario.hora === ct.hora.hora ) ) ? nuevoNegocio.push({ ...horario, selected: element.usuarioId }) : nuevoNegocio.push(horario) )
+                negocio.horarioDia.map( horario => ( horario.hora === hora.hora && horario.citaId === _id ) ? nuevoNegocio.push({ ...horario, selected: usuarioId }) : nuevoNegocio.push(horario) )
     
                 negocio.horarioDia = nuevoNegocio
 
@@ -154,7 +207,7 @@ const removeAccidentallyService = async( uid ) => {
         
             let nuevoNegocio = []
         
-            negocio.horarioDia.map( horario => ( horario.selected === element.usuarioId && horario.hora === element.hora && horario.citaId === null ) ? nuevoNegocio.push({ ...horario, selected: false, citaId: null }) : nuevoNegocio.push(horario) )
+            negocio.horarioDia.map( horario => ( horario.selected === element.usuarioId && horario.citaId === null ) ? nuevoNegocio.push({ ...horario, selected: false, citaId: null }) : nuevoNegocio.push(horario) )
         
             negocio.horarioDia = nuevoNegocio
     
@@ -331,5 +384,5 @@ module.exports = {
     removeServiceCita,
     updateAll,
     updateCitaState,
-    cancelCitaComplete
+    cancelCitaComplete,
 }
