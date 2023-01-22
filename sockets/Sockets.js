@@ -37,14 +37,18 @@ class Sockets {
                 this.io.to(uid).emit('started-service', resp)
             })
 
-            socket.on('update-service-cita', async({ id, hora, uid }) => {
-                const resp = await updateService( id, hora, uid )
+            // socket.on('update-service-cita', async({ id, hora, uid, idCita }) => {
+            //     const resp = await updateService( id, hora, uid, idCita )
+
+            //     this.io.emit('updated-service-cita', resp)
+            // })
+
+            socket.on('create-service-cita-form', async( form, idCita, barberId ) => {
+                await createServiceCita( form, uid, this.io, barberId )
+
+                const resp = await updateService( form.barberId, form.hora, form.usuarioId, idCita )
 
                 this.io.emit('updated-service-cita', resp)
-            })
-
-            socket.on('create-service-cita-form', async( form ) => {
-                await createServiceCita( form, uid, this.io )
             })
 
             socket.on('remove-service-cita-form', async() => {

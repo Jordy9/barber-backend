@@ -17,7 +17,7 @@ const startService = async( firstValue, secondValue, id, thirdValue ) => {
     return await negocio.save()
 }
 
-const updateService = async( id, hora, uid ) => {
+const updateService = async( id, hora, uid, idCita ) => {
 
     if ( !id ) return
 
@@ -25,8 +25,10 @@ const updateService = async( id, hora, uid ) => {
 
     if ( negocio.horarioDia.some( horario => horario.selected === uid ) ) {
 
+        let cita = await Cita.findById(idCita)
+
         const nuevoNegocioUpdate = negocio.horarioDia.map( horario => horario.selected === uid ? { ...horario, selected: false, citaId: null } : horario )
-        const nuevoNegocio = nuevoNegocioUpdate.map( horario => horario.hora === hora ? { ...horario, selected: uid } : horario )
+        const nuevoNegocio = nuevoNegocioUpdate.map( horario => horario.hora === hora ? { ...horario, selected: uid, citaId: cita._id } : horario )
 
         negocio.horarioDia = nuevoNegocio
 
@@ -36,11 +38,23 @@ const updateService = async( id, hora, uid ) => {
 
         if ( negocio.horarioDia.some( horario => horario.hora === hora && horario.selected === false ) ) {
 
-            const nuevoNegocio = negocio.horarioDia.map( horario => ( horario.hora === hora && horario.selected === false ) ? { ...horario, selected: uid } : horario )
-            
-            negocio.horarioDia = nuevoNegocio
-    
-            return await negocio.save()
+            if ( idCita ) {
+
+                let cita = await Cita.findById(idCita)
+
+                const nuevoNegocio = negocio.horarioDia.map( horario => ( horario.hora === hora && horario.selected === false ) ? { ...horario, selected: uid, citaId: cita._id } : horario )
+                
+                negocio.horarioDia = nuevoNegocio
+        
+                return await negocio.save()
+            } else {
+                const nuevoNegocio = negocio.horarioDia.map( horario => ( horario.hora === hora && horario.selected === false ) ? { ...horario, selected: uid } : horario )
+                
+                negocio.horarioDia = nuevoNegocio
+        
+                return await negocio.save()
+            }
+
         } else {
             return negocio
         }
@@ -49,7 +63,7 @@ const updateService = async( id, hora, uid ) => {
 
 }
 
-const createServiceCita = async( form, uid, io ) => {
+const createServiceCita = async( form, uid, io, barberId ) => {
 
     let usuario = await Usuario.findById( uid )
 
@@ -81,13 +95,23 @@ const createServiceCita = async( form, uid, io ) => {
 
             const citaFind = cita.cita.find( ct => ct.usuarioId === form.usuarioId )
 
+            const citaFindIndex = cita.cita.findIndex( ct => ct.usuarioId === form.usuarioId )
+
             if ( !citaFind ) return
 
             let negocio = await Negocio.findOne({ barberId: citaFind.barberId })
 
             if ( !negocio ) return
 
-            const nuevoHorario = negocio.horarioDia.map( e => e.selected === citaFind.usuarioId ? { ...e, selected: false, citaId: null } : e )
+            // TODO: verificar esta parte
+
+            const nuevoHorario = negocio.horarioDia.map( e => ( e.selected === citaFind.usuarioId ) ? { ...e, selected: false, citaId: null } : e )
+
+            cita.cita[citaFindIndex] = { ...cita.cita[citaFindIndex], hora: { hora: form.hora, fecha: form.fecha }, barberId: barberId }
+
+            await Cita.findByIdAndUpdate(cita._id, cita)
+
+            io.emit('updated-cita', cita)
 
             negocio.horarioDia = nuevoHorario
 

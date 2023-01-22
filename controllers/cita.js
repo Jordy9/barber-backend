@@ -73,21 +73,6 @@ const actualizarCita = async( req, res = response ) => {
 
         const citaGuardada = await Cita.findByIdAndUpdate(citaId, nuevaCita, { new: true })
 
-        for (let index = 0; index < req.body.cita.length; index++) {
-            const element = req.body.cita[index];
-            
-            let negocio = await Negocio.findOne({ barberId: element.barberId })
-            
-            const findIndex = negocio.horarioDia.findIndex( e => e.selected === element.usuarioId )
-
-            if ( !negocio.horarioDia[findIndex]?.citaId ) {
-
-                negocio.horarioDia[findIndex] = { ...negocio.horarioDia[findIndex], citaId: citaGuardada._id }
-        
-                await Negocio.findByIdAndUpdate( negocio._id, negocio, { new: true } )
-            }
-        }
-
         res.status(200).json({
             ok: true,
             cita: citaGuardada
