@@ -25,14 +25,27 @@ const updateService = async( id, hora, uid, idCita ) => {
 
     if ( negocio.horarioDia.some( horario => horario.selected === uid ) ) {
 
-        let cita = await Cita.findById(idCita)
+        if ( idCita ) {
 
-        const nuevoNegocioUpdate = negocio.horarioDia.map( horario => horario.selected === uid ? { ...horario, selected: false, citaId: null } : horario )
-        const nuevoNegocio = nuevoNegocioUpdate.map( horario => horario.hora === hora ? { ...horario, selected: uid, citaId: cita._id } : horario )
+            let cita = await Cita.findById(idCita)
 
-        negocio.horarioDia = nuevoNegocio
+            const nuevoNegocioUpdate = negocio.horarioDia.map( horario => horario.selected === uid ? { ...horario, selected: false, citaId: null } : horario )
+            const nuevoNegocio = nuevoNegocioUpdate.map( horario => horario.hora === hora ? { ...horario, selected: uid, citaId: cita._id } : horario )
+    
+            negocio.horarioDia = nuevoNegocio
+    
+            return await negocio.save()
+        } else {
 
-        return await negocio.save()
+            const nuevoNegocioUpdate = negocio.horarioDia.map( horario => horario.selected === uid ? { ...horario, selected: false, citaId: null } : horario )
+            const nuevoNegocio = nuevoNegocioUpdate.map( horario => horario.hora === hora ? { ...horario, selected: uid } : horario )
+    
+            negocio.horarioDia = nuevoNegocio
+    
+            return await negocio.save()
+
+        }
+
 
     } else {
 

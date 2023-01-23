@@ -34,7 +34,7 @@ class Sockets {
             socket.on('start-service', async({ firstValue, secondValue, id, thirdValue }) => {
                 const resp = await startService( firstValue, secondValue, id, thirdValue )
 
-                this.io.to(uid).emit('started-service', resp)
+                this.io.emit('started-service', resp, uid)
             })
 
             // socket.on('update-service-cita', async({ id, hora, uid, idCita }) => {
