@@ -1,4 +1,4 @@
-const { startService, updateService, removeService, removeAllOrManyService, removeAccidentallyService, createServiceCita, removeServiceCita, updateCitaState, cancelCitaComplete, removeChangeBarberId } = require("../controllers/socket")
+const { startService, updateService, removeService, removeAllOrManyService, removeAccidentallyService, createServiceCita, removeServiceCita, updateCitaState, cancelCitaComplete, removeChangeBarberId, pauseService } = require("../controllers/socket")
 const { comprobarJWT } = require("../helpers/jwt")
 
 class Sockets {
@@ -35,6 +35,12 @@ class Sockets {
                 const resp = await startService( firstValue, secondValue, id, thirdValue )
 
                 this.io.emit('started-service', resp, uid)
+            })
+
+            socket.on('pause-service', async( pause ) => {
+                const resp = await pauseService( pause, uid, this.io )
+
+                this.io.emit('paused-service', resp)
             })
 
             // socket.on('update-service-cita', async({ id, hora, uid, idCita }) => {

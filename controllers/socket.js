@@ -17,6 +17,47 @@ const startService = async( firstValue, secondValue, id, thirdValue ) => {
     return await negocio.save()
 }
 
+const pauseService = async( pause, id, io ) => {
+
+    let negocio = await Negocio.findOne({ barberId: id })
+
+    const Tiempo = ( pause.tiempo === 'Horas' ) ? 'hours' : 'minutes'
+
+    let nuevoNegocio = []
+
+    for (let index = 0; index < negocio.horarioDia.length; index++) {
+        const element = negocio.horarioDia[index];
+
+        if ( moment(element.fecha).isSameOrAfter(moment()) === false ) return
+
+        const condicion = ( nuevoNegocio.length === 0 ) ? false : true
+
+        let fecha = ( condicion ) ? nuevoNegocio[index - 1]?.fecha.clone().add(pause.cantidad, Tiempo) : moment().clone().add(pause.cantidad, Tiempo)
+        let hora = ( condicion ) ? nuevoNegocio[index - 1]?.fecha.clone().add(pause.cantidad, Tiempo).format('hh:mm a') : moment().clone().add(pause.cantidad, Tiempo).format('hh:mm a')
+
+        nuevoNegocio.push({ ...element, fecha, hora })
+
+        if ( element.citaId ) {
+            
+            let cita = await Cita.findById(element.citaId)
+
+            const nuevaCita = cita.cita.map( e => ( true ) && { ...e, hora: { hora, fecha } } )
+
+            cita.cita = nuevaCita
+
+            io.emit('updated-cita', cita)
+
+            await Cita.findByIdAndUpdate(cita._id, cita)
+
+        }
+        
+    }
+
+    negocio.horarioDia = nuevoNegocio
+
+    return await negocio.save()
+}
+
 const updateService = async( id, hora, uid, idCita ) => {
 
     if ( !id ) return
@@ -413,6 +454,7 @@ const updateAll = async( io ) => {
 
 module.exports = {
     startService,
+    pauseService,
     updateService,
     removeService,
     removeAllOrManyService,

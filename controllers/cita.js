@@ -3,8 +3,14 @@ const Cita = require("../models/Cita");
 const Negocio = require("../models/Negocio");
 
 const getCita = async( req, res = response ) => {
+
+    const { id } = req.query
+
+    condiciones = [ 'En-espera', 'Atendiendo' ]
     
     try {
+        // TODO: Obtener citas mediante barberos, esto hara que si se incluye en un arreglo que le salga
+        // const cita = await Cita.find({ 'cita.barberId': { $eq: id }, 'cita.estado': { $in: condiciones } }).sort({ createdAt: -1 })
         const cita = await Cita.find().sort({ createdAt: -1 })
 
         res.status(200).json({
