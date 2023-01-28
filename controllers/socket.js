@@ -19,29 +19,54 @@ const startService = async( firstValue, secondValue, id, thirdValue ) => {
 
 const pauseService = async( pause, id, io ) => {
 
-    let negocio = await Negocio.findOne({ barberId: id })
+    let negocio = await Negocio.findById( id )
 
     const Tiempo = ( pause.tiempo === 'Horas' ) ? 'hours' : 'minutes'
 
     let nuevoNegocio = []
 
-    for (let index = 0; index < negocio.horarioDia.length; index++) {
-        const element = negocio.horarioDia[index];
-
-        if ( moment(element.fecha).isSameOrAfter(moment()) === false ) return
-
+    negocio.horarioDia.forEach(async(element, index) => {
+    
         const condicion = ( nuevoNegocio.length === 0 ) ? false : true
-
+    
         let fecha = ( condicion ) ? nuevoNegocio[index - 1]?.fecha.clone().add(pause.cantidad, Tiempo) : moment().clone().add(pause.cantidad, Tiempo)
         let hora = ( condicion ) ? nuevoNegocio[index - 1]?.fecha.clone().add(pause.cantidad, Tiempo).format('hh:mm a') : moment().clone().add(pause.cantidad, Tiempo).format('hh:mm a')
-
+    
         nuevoNegocio.push({ ...element, fecha, hora })
+    
+        if ( element.citaId ) {
+            
+            let cita = await Cita.findById(element.citaId)
+    
+            const nuevaCita = cita.cita.map( e => ( true ) && { ...e, hora: { hora, fecha } } )
+    
+            cita.cita = nuevaCita
+    
+            io.emit('updated-cita', cita)
+    
+            await Cita.findByIdAndUpdate(cita._id, cita)
+    
+        }
+    })
+
+    negocio.horarioDia = nuevoNegocio
+
+    return await negocio.save()
+}
+
+const cancelStopService = async( id, io ) => {
+
+    let negocio = await Negocio.findById( id )
+
+    negocio.horarioDia.forEach(async(element) => {
+
+        if ( moment().isAfter(moment(element.fecha)) === true ) return
 
         if ( element.citaId ) {
             
             let cita = await Cita.findById(element.citaId)
 
-            const nuevaCita = cita.cita.map( e => ( true ) && { ...e, hora: { hora, fecha } } )
+            const nuevaCita = cita.cita.map( e => ( e.estado === 'En-espera' ) ? { ...e, estado: 'Cancelada' } : e )
 
             cita.cita = nuevaCita
 
@@ -50,10 +75,9 @@ const pauseService = async( pause, id, io ) => {
             await Cita.findByIdAndUpdate(cita._id, cita)
 
         }
-        
-    }
+    });
 
-    negocio.horarioDia = nuevoNegocio
+    negocio.horarioDia = []
 
     return await negocio.save()
 }
@@ -455,6 +479,7 @@ const updateAll = async( io ) => {
 module.exports = {
     startService,
     pauseService,
+    cancelStopService,
     updateService,
     removeService,
     removeAllOrManyService,
