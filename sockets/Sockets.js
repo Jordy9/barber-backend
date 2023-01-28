@@ -1,4 +1,4 @@
-const { startService, updateService, removeService, removeAllOrManyService, removeAccidentallyService, createServiceCita, removeServiceCita, updateCitaState, cancelCitaComplete, removeChangeBarberId, pauseService, cancelStopService } = require("../controllers/socket")
+const { startService, updateService, removeService, removeAllOrManyService, removeAccidentallyService, createServiceCita, removeServiceCita, updateCitaState, cancelCitaComplete, removeChangeBarberId, pauseService, cancelStopService, addTimeService } = require("../controllers/socket")
 const { comprobarJWT } = require("../helpers/jwt")
 
 class Sockets {
@@ -47,6 +47,12 @@ class Sockets {
                 const resp = await cancelStopService( id, this.io )
 
                 this.io.emit('canceled-service', resp, uid)
+            })
+
+            socket.on('add-time-service', async( id, fouthValue ) => {
+                const resp = await addTimeService( id, fouthValue )
+
+                this.io.emit('added-time-service', resp, uid)
             })
 
             // socket.on('update-service-cita', async({ id, hora, uid, idCita }) => {

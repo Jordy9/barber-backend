@@ -3,6 +3,7 @@ const Cita = require("../models/Cita")
 const Negocio = require("../models/Negocio")
 const Usuario = require("../models/Usuario")
 const moment = require("moment")
+const { getAddTimeHorario } = require("../helpers/getAddTimeHorario")
 
 const startService = async( firstValue, secondValue, id, thirdValue ) => {
 
@@ -23,14 +24,18 @@ const pauseService = async( pause, id, io ) => {
 
     const Tiempo = ( pause.tiempo === 'Horas' ) ? 'hours' : 'minutes'
 
+    const { xTiempo } = negocio
+
     let nuevoNegocio = []
+
+    const Tiempo2 = ( xTiempo.tiempo === 'Horas' ) ? 'hours' : 'minutes'
 
     negocio.horarioDia.forEach(async(element, index) => {
     
         const condicion = ( nuevoNegocio.length === 0 ) ? false : true
     
-        let fecha = ( condicion ) ? nuevoNegocio[index - 1]?.fecha.clone().add(pause.cantidad, Tiempo) : moment().clone().add(pause.cantidad, Tiempo)
-        let hora = ( condicion ) ? nuevoNegocio[index - 1]?.fecha.clone().add(pause.cantidad, Tiempo).format('hh:mm a') : moment().clone().add(pause.cantidad, Tiempo).format('hh:mm a')
+        let fecha = ( condicion ) ? nuevoNegocio[index - 1]?.fecha.clone().add(xTiempo.cantidad, Tiempo2) : moment().clone().add(pause.cantidad, Tiempo)
+        let hora = ( condicion ) ? nuevoNegocio[index - 1]?.fecha.clone().add(xTiempo.cantidad, Tiempo2).format('hh:mm a') : moment().clone().add(pause.cantidad, Tiempo).format('hh:mm a')
     
         nuevoNegocio.push({ ...element, fecha, hora })
     
@@ -78,6 +83,21 @@ const cancelStopService = async( id, io ) => {
     });
 
     negocio.horarioDia = []
+
+    return await negocio.save()
+}
+
+const addTimeService = async( id, fouthValue ) => {
+
+    let negocio = await Negocio.findById( id )
+
+    const { xTiempo, horarioDia } = negocio
+
+    const lastTime = horarioDia[horarioDia.length - 1].fecha
+
+    const nuevoHorarioDia = getAddTimeHorario(xTiempo.cantidad, xTiempo.tiempo, fouthValue, horarioDia, lastTime)
+
+    negocio.horarioDia = nuevoHorarioDia
 
     return await negocio.save()
 }
@@ -480,6 +500,7 @@ module.exports = {
     startService,
     pauseService,
     cancelStopService,
+    addTimeService,
     updateService,
     removeService,
     removeAllOrManyService,
