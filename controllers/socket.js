@@ -460,7 +460,7 @@ const updateAll = async( io ) => {
 
         if ( moment(horaMomentDelete).diff(moment(), 'minutes') <= 5 ) {
 
-            const horarioFiltrado = element.horarioDia.filter( e => e.selected === false && moment().isBefore(moment(e.fecha), 'minutes'))
+            const horarioFiltrado = element.horarioDia.filter( e => ( moment().isBefore(moment(e.fecha) ) ) )
 
             element.horarioDia = horarioFiltrado
 
