@@ -46,6 +46,7 @@ class Server {
         this.app.use('/api/auth', require('../routes/auth'));
         this.app.use('/api/negocio', require('../routes/negocio'));
         this.app.use('/api/cita', require('../routes/cita'));
+        this.app.use('/api/rating', require('../routes/rating'));
 
         this.app.get('*', (req, res) => {
             res.sendFile(path.join(__dirname, '../public', 'index.html'))

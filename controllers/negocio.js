@@ -1,5 +1,4 @@
 const { response } = require("express");
-const { getHorario } = require("../helpers/getHorario");
 const Negocio = require("../models/Negocio");
 
 const getNegocio = async( req, res = response ) => {
@@ -41,11 +40,10 @@ const crearNegocio = async( req, res = response ) => {
 }
 
 const actualizarNegocio = async( req, res = response ) => {
-
-    const { barberId } = req.body
+    const negocioId = req.params.id
 
     try {
-        let negocio = await Negocio.find({ barberId })
+        let negocio = await Negocio.findById(negocioId)
 
         if ( !negocio ) {
             return res.status(400).json({
@@ -54,11 +52,18 @@ const actualizarNegocio = async( req, res = response ) => {
             })
         }
 
+        const nuevoNegocio = {
+            ...req.body
+        }
+
+        const negocioActualizado = await Negocio.findByIdAndUpdate(negocioId, nuevoNegocio, { new: true })
+
         res.status(200).json({
             ok: true,
-            negocio
+            negocio: negocioActualizado
         })
     } catch (error) {
+        console.log(error)
         res.status(500).json({
             ok: false,
             msg: 'Hubo un problema'

@@ -5,6 +5,17 @@ const Usuario = require("../models/Usuario")
 const moment = require("moment")
 const { getAddTimeHorario } = require("../helpers/getAddTimeHorario")
 
+const updateUsuario = async( id, isDelete ) => {
+
+    if ( !isDelete ) return
+
+    let usuario = await Usuario.findById(id)
+
+    usuario.ratingForm = []
+
+    return await Usuario.findByIdAndUpdate(usuario._id, usuario, { new: true })
+}
+
 const startService = async( firstValue, secondValue, id, thirdValue ) => {
 
     let negocio = await Negocio.findOne({ barberId: id })
@@ -347,12 +358,24 @@ const updateCitaState = async( id, usuarioId, estado, io ) => {
 
     let cita = await Cita.findById(id)
 
+    let usuario = await Usuario.findById(cita.cita[0].usuarioId)
+
     const indexCita = cita.cita.findIndex( e => e.usuarioId === usuarioId )
 
     cita.cita[indexCita].estado = estado
 
     if ( estado === 'Finalizada' ) {
         let [ negocio ] = await Negocio.find({ barberId: cita.cita[indexCita].barberId })
+
+        const rating = {
+            usuarioId: cita.cita[0].usuarioId,
+            barberId: cita.cita[0].barberId,
+            calificacion: 0
+        }
+
+        usuario.ratingForm = [ ...usuario.ratingForm, rating ]
+        
+        usuario.save()
 
         const indexNegocio = negocio.horarioDia.findIndex( e => e.selected === usuarioId )
         
@@ -497,6 +520,7 @@ const updateAll = async( io ) => {
 }
 
 module.exports = {
+    updateUsuario,
     startService,
     pauseService,
     cancelStopService,

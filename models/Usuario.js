@@ -25,7 +25,11 @@ const UsuarioSchema = Schema({
     formCita: {
         type: Object,
         default: []
-    }
+    },
+    ratingForm: {
+        type: Object,
+        default: []
+    },
 }, {
     timestamps: true
 })
