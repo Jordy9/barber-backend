@@ -1,10 +1,12 @@
 const {Router} = require('express');
-const { getCita, crearCita, actualizarCita } = require('../controllers/cita');
+const { getCita, getCitaList, crearCita, actualizarCita } = require('../controllers/cita');
 const router = Router()
 
 const { validarJWT } = require('../middlewares/validar-jwt');
 
 router.get('/', getCita)
+
+router.get('/list', getCitaList)
 
 router.use(validarJWT);
 

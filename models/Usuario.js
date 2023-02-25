@@ -30,6 +30,10 @@ const UsuarioSchema = Schema({
         type: Object,
         default: []
     },
+    role: {
+        type: String,
+        default: 'Usuario'
+    }
 }, {
     timestamps: true
 })

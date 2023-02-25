@@ -1,21 +1,109 @@
 const { response } = require("express");
+const moment = require("moment/moment");
 const Cita = require("../models/Cita");
 const Negocio = require("../models/Negocio");
 
 const getCita = async( req, res = response ) => {
 
-    const { id } = req.query
+    let { id, page, size, condition, start, end } = req.query
 
-    condiciones = [ 'En-espera', 'Atendiendo' ]
+    const condiciones = [ 'En-espera', 'Atendiendo' ]
+
+    if ( start === 'undefined' || end === 'undefined' ) {
+        start = moment().startOf('month').format('YYYY-MM-DDTHH:mm:ss')
+        end = moment().endOf('month').format('YYYY-MM-DDTHH:mm:ss')
+    }
+ 
+    if (!parseInt(page)) {
+        page = 1
+    }
+
+    if (!parseInt(size)) {
+        size = 15
+    }
+
+    const limit = parseInt(size)
+    const skip = (page - 1) * size
     
     try {
-        // TODO: Obtener citas mediante barberos, esto hara que si se incluye en un arreglo que le salga
-        // const cita = await Cita.find({ 'cita.barberId': { $eq: id }, 'cita.estado': { $in: condiciones } }).sort({ createdAt: -1 })
-        const cita = await Cita.find().sort({ createdAt: -1 })
 
-        res.status(200).json({
-            ok: true,
-            cita
+        if ( condition === 'true' ) {
+
+            Cita.find({ 'cita.barberId': { $eq: id }, 'cita.estado': { $in: condiciones }, createdAt: {$gte: start, $lte: end} }).sort({ createdAt: -1 }).limit(limit).skip(skip).exec((err, cita) => {
+                Cita.find({ 'cita.barberId': { $eq: id }, 'cita.estado': { $in: condiciones }, createdAt: {$gte: start, $lte: end} }).count((err, count) => {
+                    if (err) return false
+                    res.status(200).json({
+                        ok: true,
+                        cita,
+                        page: parseInt(page),
+                        total: Math.ceil(count/limit),
+                        count
+                    })
+                })
+            })
+            
+        } else {
+
+            Cita.find({ 'cita.barberId': { $eq: id }, createdAt: {$gte: start, $lte: end} }).sort({ createdAt: -1 }).limit(limit).skip(skip).exec((err, cita) => {
+                Cita.find({ 'cita.barberId': { $eq: id }, createdAt: {$gte: start, $lte: end} }).count((err, count) => {
+                    if (err) return false
+                    res.status(200).json({
+                        ok: true,
+                        cita,
+                        page: parseInt(page),
+                        total: Math.ceil(count/limit),
+                        count
+                    })
+                })
+            })
+
+        }
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({
+            ok: false,
+            msg: 'Hubo un problema'
+        })
+    }
+}
+
+const getCitaList = async( req, res = response ) => {
+
+    let { id, page, size } = req.query
+
+    if (!parseInt(page)) {
+        page = 1
+    }
+
+    if (!parseInt(size)) {
+        size = 15
+    }
+
+    const limit = parseInt(size)
+    const skip = (parseInt(page) - 1) * limit
+    
+    try {
+        // const usuario = await Usuario.findById(id)
+
+        // if ( !usuario ) return
+
+        // if ( usuario.role )
+
+        // TODO: Obtener citas mediante barberos, esto hara que si se incluye en un arreglo que le salga
+        // const cita = await Cita.find({ 'cita.barberId': { $eq: id } }).sort({ createdAt: -1 })
+
+        Cita.find({ 'userId': { $eq: id } }).sort({ createdAt: -1 }).limit(limit).skip(skip).exec((err, cita) => {
+            Cita.find({ 'userId': { $eq: id } }).count((err, count) => {
+                if (err) return false
+                res.status(200).json({
+                    ok: true,
+                    cita,
+                    page: parseInt(page),
+                    total: Math.ceil(count/limit),
+                    count
+                })
+            })
         })
     } catch (error) {
         res.status(500).json({
@@ -95,6 +183,7 @@ const actualizarCita = async( req, res = response ) => {
 
 module.exports = {
     getCita,
+    getCitaList,
     crearCita,
     actualizarCita
 }
