@@ -409,8 +409,8 @@ const cancelCitaComplete = async( id, citaForm, io ) => {
 
     let nuevaCita = []
 
-    for (let index = 0; index < citaForm.length; index++) {
-        const element = citaForm[index];
+    for (let index = 0; index < citaForm.cita.length; index++) {
+        const element = citaForm.cita[index];
 
         if ( !element.barberId ) return
 
